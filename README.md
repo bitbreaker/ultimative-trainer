@@ -1,73 +1,175 @@
-# React + TypeScript + Vite
+# 🧠 DER ULTIMATIVE TRAINER
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> Ein retro-inspirierter Lerntrainer im DOS-Stil – komplett per Tastatur steuerbar.
 
-Currently, two official plugins are available:
+© 2026 Jörn Priebe. All rights reserved.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-## React Compiler
+![Status](https://img.shields.io/badge/status-in%20development-blue)
+![Tech](https://img.shields.io/badge/tech-React%20%2B%20TypeScript-blue)
+![UI](https://img.shields.io/badge/UI-Retro%20DOS-yellow)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## ✨ Features
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+* 🎮 **Komplett per Tastatur steuerbar**
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+  * `↑ ↓` Navigation
+  * `Enter` auswählen / prüfen
+  * `ESC` zurück
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+* 🧠 **Adaptive Lernlogik**
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+  * Schwierige Fragen kommen häufiger
+  * basierend auf Fehlerquote & Historie
+
+* 📊 **Detaillierte Statistik**
+
+  * gesehen / richtig / falsch
+  * Erfolgsquote pro Frage
+  * Top schwierigste Fragen
+
+* 🎨 **Retro DOS UI**
+
+  * Monospace Font
+  * ASCII-Rahmen
+  * Blau / Weiß / Gelb Farbpalette
+
+* ⚡ **Offline-fähig**
+
+  * läuft komplett im Browser
+  * ideal für Raspberry Pi
+
+---
+
+## 📸 Preview
+
+*(Optional Screenshot hier einfügen)*
+
+---
+
+## 🧱 Tech Stack
+
+* React
+* TypeScript
+* Vite
+* LocalStorage (für Persistenz)
+
+---
+
+## 📂 Projektstruktur
+
+```text
+src/
+  components/
+  hooks/
+  lib/
+  types/
+  data/
+    sbf-see.json
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 📚 Datenformat
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```json
+{
+  "id": "sbf-see",
+  "title": "SBF See",
+  "mode": "multiple-choice",
+  "questions": [
+    {
+      "id": "q1",
+      "question": "...",
+      "options": [
+        { "id": "a", "text": "..." }
+      ],
+      "correctOptionIds": ["a"]
+    }
+  ]
+}
 ```
+
+---
+
+## 🧠 Lernlogik
+
+Fragen werden dynamisch priorisiert basierend auf:
+
+* ❌ Fehlerquote
+* 🔁 Anzahl falscher Antworten
+* 👁️ Häufigkeit
+
+👉 Ziel: Fokus auf schwache Themen
+
+---
+
+## 🚀 Getting Started
+
+```bash
+npm install
+npm run dev
+```
+
+Dann im Browser öffnen:
+
+```
+http://localhost:5173
+```
+
+---
+
+## ⌨️ Steuerung
+
+| Taste | Funktion         |
+| ----- | ---------------- |
+| ↑ ↓   | Navigation       |
+| Enter | Auswahl / prüfen |
+| ESC   | zurück           |
+
+---
+
+## 🛠 Roadmap
+
+* [ ] „Nur schwache Fragen“-Modus
+* [ ] Vokabeltrainer
+* [ ] Bildfragen
+* [ ] Fortschritt zurücksetzen
+* [ ] Spaced Repetition (Anki-Style)
+
+---
+
+## 📦 Deployment
+
+Build:
+
+```bash
+npm run build
+```
+
+Danach statisch hostbar (z. B. Raspberry Pi, Nginx, GitHub Pages).
+
+---
+
+## 🧑‍💻 Autor
+
+**Jörn Priebe**
+*(c) 2026*
+
+---
+
+## ⚡ Idee
+
+Minimalistisch.
+Schnell.
+Fokussiert.
+
+👉 Lernen ohne Ablenkung.
+
+---
+
+## 🧪 Status
+
+🚧 Aktive Entwicklung – Feedback willkommen
