@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useWindowKeydown } from "./useWindowKeydown";
 
 type Params = {
   itemCount: number;
@@ -15,33 +15,32 @@ export function useKeyboardMenu({
   onEnter,
   onBack,
 }: Params) {
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "ArrowUp") {
-        event.preventDefault();
-        onChange((selectedIndex - 1 + itemCount) % itemCount);
-      }
-
-      if (event.key === "ArrowDown") {
-        event.preventDefault();
-        onChange((selectedIndex + 1) % itemCount);
-      }
-
-      if (event.key === "Enter") {
-        event.preventDefault();
-        onEnter();
-      }
-
-      if (event.key === "Escape" && onBack) {
-        event.preventDefault();
-        onBack();
-      }
+  useWindowKeydown((event) => {
+    if (itemCount <= 0) {
+      return;
     }
 
-    window.addEventListener("keydown", handleKeyDown);
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      onChange((selectedIndex - 1 + itemCount) % itemCount);
+      return;
+    }
 
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [itemCount, selectedIndex, onChange, onEnter, onBack]);
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      onChange((selectedIndex + 1) % itemCount);
+      return;
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      onEnter();
+      return;
+    }
+
+    if (event.key === "Escape" && onBack) {
+      event.preventDefault();
+      onBack();
+    }
+  });
 }

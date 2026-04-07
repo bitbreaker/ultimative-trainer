@@ -1,46 +1,10 @@
-import type { QuizStats } from "../types/stats";
-
-const STORAGE_KEY = "quiz-stats";
-
-export function loadStats(): QuizStats {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  return raw ? JSON.parse(raw) : {};
-}
-
-export function saveStats(stats: QuizStats) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(stats));
-}
-
-export function updateStats(
-  stats: QuizStats,
-  questionId: string,
-  correct: boolean
-): QuizStats {
-  const current = stats[questionId] || {
-    questionId,
-    shown: 0,
-    correct: 0,
-    wrong: 0,
-  };
-
-  current.shown += 1;
-
-  if (correct) {
-    current.correct += 1;
-  } else {
-    current.wrong += 1;
-  }
-
-  return {
-    ...stats,
-    [questionId]: current,
-  };
-}
-
-export function getAccuracy(stat?: {
-  correct: number;
+export type QuestionStats = {
+  questionId: string;
   shown: number;
-}) {
-  if (!stat || stat.shown === 0) return 0;
-  return Math.round((stat.correct / stat.shown) * 100);
-}
+  correct: number;
+  wrong: number;
+};
+
+export type QuizSetStats = Record<string, QuestionStats>;
+
+export type AllQuizStats = Record<string, QuizSetStats>;

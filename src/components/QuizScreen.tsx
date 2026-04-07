@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import type { QuizSet } from "../types/quiz";
+import type { QuizQuestion, QuizSet } from "../types/quiz";
 import { shuffleArray } from "../lib/shuffle";
 import {
-  loadStats,
-  saveStats,
-  updateStats,
   getAccuracy,
-  getPriorityScore,
+  getQuestionStats,
+  getSetStats,
+  loadAllStats,
+  saveAllStats,
+  sortQuestionsByPriority,
+  updateQuestionStats,
 } from "../lib/stats";
+import { useWindowKeydown } from "../hooks/useWindowKeydown";
 
 type Props = {
   quizSet: QuizSet;
@@ -15,28 +18,42 @@ type Props = {
 };
 
 export function QuizScreen({ quizSet, onBack }: Props) {
-  const [stats, setStats] = useState(loadStats());
-
-  const sortedQuestions = useMemo(() => {
-    return [...quizSet.questions].sort((a, b) => {
-      const scoreA = getPriorityScore(stats[a.id]);
-      const scoreB = getPriorityScore(stats[b.id]);
-      return scoreB - scoreA;
-    });
-  }, [quizSet.questions, stats]);
-
+  const [allStats, setAllStats] = useState(() => loadAllStats());
+  const [sessionQuestions, setSessionQuestions] = useState<QuizQuestion[]>([]);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selectedOptionIndex, setSelectedOptionIndex] = useState(0);
   const [checked, setChecked] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
 
-  const question = sortedQuestions[questionIndex];
+  useEffect(() => {
+    const latestAllStats = loadAllStats();
+    setAllStats(latestAllStats);
+
+    const setStats = getSetStats(latestAllStats, quizSet.id);
+    const sorted = sortQuestionsByPriority(quizSet.questions, setStats);
+
+    setSessionQuestions(sorted);
+    setQuestionIndex(0);
+    setSelectedOptionIndex(0);
+    setChecked(false);
+    setIsCorrect(false);
+  }, [quizSet]);
+
+  const question = sessionQuestions[questionIndex];
 
   const shuffledOptions = useMemo(() => {
+    if (!question) {
+      return [];
+    }
+
     return shuffleArray(question.options);
   }, [question]);
 
-  const currentStat = stats[question.id];
+  const setStats = useMemo(() => {
+    return getSetStats(allStats, quizSet.id);
+  }, [allStats, quizSet.id]);
+
+  const currentStat = question ? getQuestionStats(setStats, question.id) : undefined;
   const accuracy = getAccuracy(currentStat);
 
   useEffect(() => {
@@ -45,77 +62,90 @@ export function QuizScreen({ quizSet, onBack }: Props) {
     setIsCorrect(false);
   }, [questionIndex]);
 
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (!checked && event.key === "ArrowUp") {
-        event.preventDefault();
-        setSelectedOptionIndex((prev) =>
-          (prev - 1 + shuffledOptions.length) % shuffledOptions.length
-        );
-      }
-
-      if (!checked && event.key === "ArrowDown") {
-        event.preventDefault();
-        setSelectedOptionIndex((prev) => (prev + 1) % shuffledOptions.length);
-      }
-
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onBack();
-      }
-
-      if (event.key === "Enter") {
-        event.preventDefault();
-
-        if (!checked) {
-          const selectedOption = shuffledOptions[selectedOptionIndex];
-          const correct = question.correctOptionIds.includes(selectedOption.id);
-
-          setIsCorrect(correct);
-          setChecked(true);
-
-          const newStats = updateStats(stats, question.id, correct);
-          setStats(newStats);
-          saveStats(newStats);
-        } else {
-          if (questionIndex === sortedQuestions.length - 1) {
-            onBack();
-          } else {
-            setQuestionIndex((prev) => prev + 1);
-          }
-        }
-      }
+  useWindowKeydown((event) => {
+    if (!question || shuffledOptions.length === 0) {
+      return;
     }
 
-    window.addEventListener("keydown", handleKeyDown);
+    if (!checked && event.key === "ArrowUp") {
+      event.preventDefault();
+      setSelectedOptionIndex((prev) => {
+        return (prev - 1 + shuffledOptions.length) % shuffledOptions.length;
+      });
+      return;
+    }
 
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [
-    checked,
-    selectedOptionIndex,
-    shuffledOptions,
-    question,
-    questionIndex,
-    sortedQuestions.length,
-    stats,
-    onBack,
-  ]);
+    if (!checked && event.key === "ArrowDown") {
+      event.preventDefault();
+      setSelectedOptionIndex((prev) => {
+        return (prev + 1) % shuffledOptions.length;
+      });
+      return;
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      onBack();
+      return;
+    }
+
+    if (event.key !== "Enter") {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (!checked) {
+      const selectedOption = shuffledOptions[selectedOptionIndex];
+      const wasCorrect = question.correctOptionIds.includes(selectedOption.id);
+
+      setIsCorrect(wasCorrect);
+      setChecked(true);
+
+      const updatedAllStats = updateQuestionStats(
+        allStats,
+        quizSet.id,
+        question.id,
+        wasCorrect
+      );
+
+      setAllStats(updatedAllStats);
+      saveAllStats(updatedAllStats);
+      return;
+    }
+
+    if (questionIndex >= sessionQuestions.length - 1) {
+      onBack();
+      return;
+    }
+
+    setQuestionIndex((prev) => prev + 1);
+  });
+
+  if (!question) {
+    return (
+      <div className="quiz-screen">
+        <div className="menu-title">TRAINING</div>
+        <div className="quiz-progress">Keine Fragen gefunden.</div>
+        <div className="quiz-footer">ESC Zurück {quizSet.title}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="quiz-screen">
       <div className="menu-title">TRAINING</div>
 
-      <div className="quiz-progress">
-        Frage {questionIndex + 1} von {sortedQuestions.length}
+      <div className="quiz-meta">
+        <div className="quiz-progress">
+          Frage {questionIndex + 1} von {sessionQuestions.length}
+        </div>
+        <div className="quiz-progress">Erfolgsquote: {accuracy}%</div>
       </div>
 
-      <div className="quiz-progress">Erfolgsquote: {accuracy}%</div>
+      <div className="quiz-question-box">{question.question}</div>
 
-      <div className="quiz-question-box">
-        <div className="quiz-question">{question.question}</div>
-      </div>
-
-      <div className="quiz-options-box">
+      <div className="quiz-options">
         {shuffledOptions.map((option, index) => {
           const isSelected = index === selectedOptionIndex;
           const isRightAnswer = question.correctOptionIds.includes(option.id);
@@ -136,40 +166,38 @@ export function QuizScreen({ quizSet, onBack }: Props) {
 
           return (
             <div key={option.id} className={className}>
-              {String.fromCharCode(65 + index)}) {option.text}
+              <div className="quiz-option-label">
+                {String.fromCharCode(65 + index)})
+              </div>
+              <div className="quiz-option-text">{option.text}</div>
             </div>
           );
         })}
       </div>
 
-      <div className="result-box">
-        {!checked && (
-          <div>
-            <span className="footer-key">ENTER</span> Prüfen
+      {!checked && (
+        <div className="quiz-hint">
+          <span className="highlight">ENTER</span> Prüfen
+        </div>
+      )}
+
+      {checked && (
+        <>
+          <div className={`quiz-result ${isCorrect ? "correct" : "wrong"}`}>
+            {isCorrect ? "RICHTIG" : "FALSCH"}
           </div>
-        )}
 
-        {checked && (
-          <>
-            <div className={isCorrect ? "result-correct" : "result-wrong"}>
-              {isCorrect ? "RICHTIG" : "FALSCH"}
-            </div>
+          {question.explanation && (
+            <div className="quiz-explanation">{question.explanation}</div>
+          )}
 
-            {question.explanation && (
-              <div className="result-explanation">{question.explanation}</div>
-            )}
+          <div className="quiz-hint">
+            <span className="highlight">ENTER</span> Weiter
+          </div>
+        </>
+      )}
 
-            <div className="result-next">
-              <span className="footer-key">ENTER</span> Weiter
-            </div>
-          </>
-        )}
-      </div>
-
-      <div className="status-line">
-        <span>ESC Zurück</span>
-        <span>{quizSet.title}</span>
-      </div>
+      <div className="quiz-footer">ESC Zurück {quizSet.title}</div>
     </div>
   );
 }

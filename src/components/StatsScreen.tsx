@@ -1,6 +1,13 @@
-import { useEffect } from "react";
-import { loadStats, getAccuracy, getPriorityScore } from "../lib/stats";
+import { useMemo } from "react";
 import type { QuizSet } from "../types/quiz";
+import {
+  getAccuracy,
+  getQuestionStats,
+  getPriorityScore,
+  getSetStats,
+  loadAllStats,
+} from "../lib/stats";
+import { useWindowKeydown } from "../hooks/useWindowKeydown";
 
 type Props = {
   quizSet: QuizSet;
@@ -8,40 +15,33 @@ type Props = {
 };
 
 export function StatsScreen({ quizSet, onBack }: Props) {
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onBack();
-      }
+  useWindowKeydown((event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      onBack();
     }
+  });
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onBack]);
+  const rows = useMemo(() => {
+    const allStats = loadAllStats();
+    const setStats = getSetStats(allStats, quizSet.id);
 
-  const stats = loadStats();
+    return quizSet.questions
+      .map((question) => {
+        const stat = getQuestionStats(setStats, question.id);
 
-  const rows = quizSet.questions
-    .map((question) => {
-      const stat = stats[question.id] || {
-        questionId: question.id,
-        shown: 0,
-        correct: 0,
-        wrong: 0,
-      };
-
-      return {
-        id: question.id,
-        question: question.question,
-        shown: stat.shown,
-        correct: stat.correct,
-        wrong: stat.wrong,
-        accuracy: getAccuracy(stat),
-        priority: getPriorityScore(stat),
-      };
-    })
-    .sort((a, b) => b.priority - a.priority);
+        return {
+          id: question.id,
+          question: question.question,
+          shown: stat.shown,
+          correct: stat.correct,
+          wrong: stat.wrong,
+          accuracy: getAccuracy(stat),
+          priority: getPriorityScore(stat),
+        };
+      })
+      .sort((a, b) => b.priority - a.priority);
+  }, [quizSet]);
 
   const totalShown = rows.reduce((sum, row) => sum + row.shown, 0);
   const totalCorrect = rows.reduce((sum, row) => sum + row.correct, 0);
@@ -49,8 +49,11 @@ export function StatsScreen({ quizSet, onBack }: Props) {
   const totalAccuracy =
     totalShown > 0 ? Math.round((totalCorrect / totalShown) * 100) : 0;
 
-  function shorten(text: string, max = 58) {
-    if (text.length <= max) return text;
+  function shorten(text: string, max = 72) {
+    if (text.length <= max) {
+      return text;
+    }
+
     return text.slice(0, max - 3) + "...";
   }
 
@@ -59,6 +62,7 @@ export function StatsScreen({ quizSet, onBack }: Props) {
       <div className="menu-title">STATISTIK</div>
 
       <div className="stats-summary-box">
+        <div>Set: {quizSet.title}</div>
         <div>Fragen im Set: {quizSet.questions.length}</div>
         <div>Beantwortet: {totalShown}</div>
         <div>Richtig: {totalCorrect}</div>
@@ -68,35 +72,29 @@ export function StatsScreen({ quizSet, onBack }: Props) {
 
       <div className="stats-table-box">
         <div className="stats-table-header">
-          <span className="col-question">Frage</span>
-          <span className="col-small">G</span>
-          <span className="col-small">R</span>
-          <span className="col-small">F</span>
-          <span className="col-small">%</span>
+          <div className="col-question">Frage</div>
+          <div className="col-small">G</div>
+          <div className="col-small">R</div>
+          <div className="col-small">F</div>
+          <div className="col-small">%</div>
         </div>
 
         {rows.slice(0, 12).map((row, index) => (
           <div key={row.id} className="stats-table-row">
-            <span className="col-question">
+            <div className="col-question">
               {index + 1}. {shorten(row.question)}
-            </span>
-            <span className="col-small">{row.shown}</span>
-            <span className="col-small">{row.correct}</span>
-            <span className="col-small">{row.wrong}</span>
-            <span className="col-small">{row.accuracy}</span>
+            </div>
+            <div className="col-small">{row.shown}</div>
+            <div className="col-small">{row.correct}</div>
+            <div className="col-small">{row.wrong}</div>
+            <div className="col-small">{row.accuracy}</div>
           </div>
         ))}
       </div>
 
-      <div className="footer-bar">
-        <div>
-          <span className="footer-key">ESC</span> Zurück
-        </div>
-      </div>
-
       <div className="status-line">
+        <span>ESC Zurück</span>
         <span>Top 12 schwierige Fragen</span>
-        <span>{quizSet.title}</span>
       </div>
     </div>
   );

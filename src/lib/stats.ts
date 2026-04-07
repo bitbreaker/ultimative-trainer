@@ -1,59 +1,138 @@
-import type { QuizStats } from "../types/stats";
+import type { QuizQuestion } from "../types/quiz";
+import type { AllQuizStats, QuestionStats, QuizSetStats } from "../types/stats";
 
 const STORAGE_KEY = "quiz-stats";
 
-export function loadStats(): QuizStats {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  return raw ? JSON.parse(raw) : {};
+function isQuestionStats(value: unknown): value is QuestionStats {
+  if (!value || typeof value !== "object") return false;
+
+  const candidate = value as Record<string, unknown>;
+
+  return (
+    typeof candidate.questionId === "string" &&
+    typeof candidate.shown === "number" &&
+    typeof candidate.correct === "number" &&
+    typeof candidate.wrong === "number"
+  );
 }
 
-export function saveStats(stats: QuizStats) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(stats));
+function isLegacyFlatStats(value: unknown): value is Record<string, QuestionStats> {
+  if (!value || typeof value !== "object") return false;
+
+  return Object.values(value as Record<string, unknown>).every(isQuestionStats);
 }
 
-export function updateStats(
-  stats: QuizStats,
-  questionId: string,
-  correct: boolean
-): QuizStats {
-  const current = stats[questionId] || {
+export function createEmptyQuestionStats(questionId: string): QuestionStats {
+  return {
     questionId,
     shown: 0,
     correct: 0,
     wrong: 0,
   };
+}
 
-  current.shown += 1;
+export function loadAllStats(): AllQuizStats {
+  const raw = localStorage.getItem(STORAGE_KEY);
 
-  if (correct) {
-    current.correct += 1;
-  } else {
-    current.wrong += 1;
+  if (!raw) {
+    return {};
   }
 
+  try {
+    const parsed: unknown = JSON.parse(raw);
+
+    if (!parsed || typeof parsed !== "object") {
+      return {};
+    }
+
+    return parsed as AllQuizStats;
+  } catch {
+    return {};
+  }
+}
+
+export function saveAllStats(stats: AllQuizStats): void {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(stats));
+}
+
+export function getSetStats(allStats: AllQuizStats, setId: string): QuizSetStats {
+  const directSetStats = allStats[setId];
+
+  if (directSetStats && typeof directSetStats === "object") {
+    return directSetStats;
+  }
+
+  // Migrationshilfe:
+  // Falls früher flach nach questionId gespeichert wurde,
+  // behandeln wir das bei einem Ein-Set-Projekt als Stats für das aktuelle Set.
+  if (isLegacyFlatStats(allStats)) {
+    return allStats;
+  }
+
+  return {};
+}
+
+export function getQuestionStats(
+  setStats: QuizSetStats,
+  questionId: string
+): QuestionStats {
+  return setStats[questionId] ?? createEmptyQuestionStats(questionId);
+}
+
+export function updateQuestionStats(
+  allStats: AllQuizStats,
+  setId: string,
+  questionId: string,
+  wasCorrect: boolean
+): AllQuizStats {
+  const currentSetStats = getSetStats(allStats, setId);
+  const currentQuestionStats = getQuestionStats(currentSetStats, questionId);
+
+  const updatedQuestionStats: QuestionStats = {
+    ...currentQuestionStats,
+    shown: currentQuestionStats.shown + 1,
+    correct: currentQuestionStats.correct + (wasCorrect ? 1 : 0),
+    wrong: currentQuestionStats.wrong + (wasCorrect ? 0 : 1),
+  };
+
   return {
-    ...stats,
-    [questionId]: current,
+    ...allStats,
+    [setId]: {
+      ...currentSetStats,
+      [questionId]: updatedQuestionStats,
+    },
   };
 }
 
-// ✅ DAS HAT GEFEHLT
-export function getAccuracy(stat?: {
-  correct: number;
-  shown: number;
-}) {
-  if (!stat || stat.shown === 0) return 0;
+export function getAccuracy(stat?: Pick<QuestionStats, "correct" | "shown">): number {
+  if (!stat || stat.shown === 0) {
+    return 0;
+  }
+
   return Math.round((stat.correct / stat.shown) * 100);
 }
 
-// ✅ UND DAS
-export function getPriorityScore(stat?: {
-  shown: number;
-  wrong: number;
-}) {
-  if (!stat) return 1000;
+export function getPriorityScore(stat?: Pick<QuestionStats, "shown" | "wrong">): number {
+  if (!stat) {
+    return 1000;
+  }
 
-  const wrongRate = stat.shown > 0 ? stat.wrong / stat.shown : 0;
+  const wrongRate = stat.shown > 0 ? stat.wrong / stat.shown : 1;
+  const unseenBonus = stat.shown === 0 ? 500 : 0;
+  const wrongWeight = stat.wrong * 20;
+  const lowExposureBonus = Math.max(0, 10 - stat.shown) * 5;
 
-  return wrongRate * 100 + stat.wrong * 10 - stat.shown;
+  return unseenBonus + wrongRate * 100 + wrongWeight + lowExposureBonus;
+}
+
+export function sortQuestionsByPriority(
+  questions: QuizQuestion[],
+  setStats: QuizSetStats
+): QuizQuestion[] {
+  return [...questions].sort((a, b) => {
+    const scoreA = getPriorityScore(setStats[a.id]);
+    const scoreB = getPriorityScore(setStats[b.id]);
+
+    return scoreB - scoreA;
+  });
 }
