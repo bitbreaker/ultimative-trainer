@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Frame } from "./components/Frame";
 import { Menu } from "./components/Menu";
-import { SetSelection } from "./components/SetSelection";
 import { QuizScreen } from "./components/QuizScreen";
+import { SetSelection } from "./components/SetSelection";
 import { StatsScreen } from "./components/StatsScreen";
 import sbfSeeData from "./data/sbf-see.json";
 import type { QuizSet } from "./types/quiz";
@@ -16,15 +16,15 @@ const header = `
 
 type Screen = "menu" | "set-select" | "quiz" | "stats";
 
-const quizSets: Record<string, QuizSet> = {
-  "sbf-see": sbfSeeData as QuizSet,
-};
+const quizSets: QuizSet[] = [sbfSeeData as QuizSet];
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>("menu");
-  const [activeSetId, setActiveSetId] = useState<string>("sbf-see");
+  const [activeSetId, setActiveSetId] = useState<string>(quizSets[0]?.id ?? "");
 
-  const activeQuizSet = quizSets[activeSetId];
+  const activeQuizSet = useMemo(() => {
+    return quizSets.find((set) => set.id === activeSetId) ?? quizSets[0];
+  }, [activeSetId]);
 
   return (
     <div className="app-shell">
@@ -39,6 +39,7 @@ export default function App() {
 
           {screen === "set-select" && (
             <SetSelection
+              sets={quizSets.map((set) => ({ id: set.id, label: set.title }))}
               onBack={() => setScreen("menu")}
               onSelectSet={(setId) => {
                 setActiveSetId(setId);
@@ -55,10 +56,7 @@ export default function App() {
           )}
 
           {screen === "stats" && activeQuizSet && (
-            <StatsScreen
-              quizSet={activeQuizSet}
-              onBack={() => setScreen("menu")}
-            />
+            <StatsScreen quizSet={activeQuizSet} onBack={() => setScreen("menu")} />
           )}
         </Frame>
       </div>

@@ -12,23 +12,25 @@ const items = ["Trainieren", "Statistik anzeigen", "Beenden"];
 export function Menu({ onTrain, onStats }: Props) {
   const [selected, setSelected] = useState(0);
 
+  function activateIndex(index: number) {
+    if (index === 0) {
+      onTrain();
+      return;
+    }
+
+    if (index === 1) {
+      onStats();
+      return;
+    }
+
+    alert("Der Browser kann nicht direkt von der App beendet werden.");
+  }
+
   useKeyboardMenu({
     itemCount: items.length,
     selectedIndex: selected,
     onChange: setSelected,
-    onEnter: () => {
-      if (selected === 0) {
-        onTrain();
-      }
-
-      if (selected === 1) {
-        onStats();
-      }
-
-      if (selected === 2) {
-        alert("Beenden im Browser nicht aktiv");
-      }
-    },
+    onEnter: () => activateIndex(selected),
   });
 
   return (
@@ -36,10 +38,15 @@ export function Menu({ onTrain, onStats }: Props) {
       <div className="menu-title">MAIN MENU</div>
 
       <div className="menu-subtitle">
-        Willkommen...Bitte treffen Sie Ihre Auswahl
+        Willkommen... Bitte treffen Sie Ihre Auswahl
       </div>
 
-      <MenuBox items={items} selected={selected} />
+      <MenuBox
+        items={items}
+        selected={selected}
+        onSelect={setSelected}
+        onActivate={activateIndex}
+      />
 
       <div className="footer-bar">
         <div>
@@ -48,11 +55,14 @@ export function Menu({ onTrain, onStats }: Props) {
         <div>
           <span className="footer-key">ENTER</span> Auswählen
         </div>
+        <div>
+          <span className="footer-key">TAP</span> Tippen / Klicken
+        </div>
       </div>
 
       <div className="status-line">
         <span>Der Ultimative Trainer</span>
-        <span>Bereit</span>
+        <span>Bereit für Tastatur und Touch</span>
       </div>
     </div>
   );

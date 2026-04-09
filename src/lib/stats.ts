@@ -1,10 +1,13 @@
+import { shuffleArray } from "./shuffle";
 import type { QuizQuestion } from "../types/quiz";
 import type { AllQuizStats, QuestionStats, QuizSetStats } from "../types/stats";
 
 const STORAGE_KEY = "quiz-stats";
 
 function isQuestionStats(value: unknown): value is QuestionStats {
-  if (!value || typeof value !== "object") return false;
+  if (!value || typeof value !== "object") {
+    return false;
+  }
 
   const candidate = value as Record<string, unknown>;
 
@@ -17,7 +20,9 @@ function isQuestionStats(value: unknown): value is QuestionStats {
 }
 
 function isLegacyFlatStats(value: unknown): value is Record<string, QuestionStats> {
-  if (!value || typeof value !== "object") return false;
+  if (!value || typeof value !== "object") {
+    return false;
+  }
 
   return Object.values(value as Record<string, unknown>).every(isQuestionStats);
 }
@@ -62,9 +67,6 @@ export function getSetStats(allStats: AllQuizStats, setId: string): QuizSetStats
     return directSetStats;
   }
 
-  // Migrationshilfe:
-  // Falls früher flach nach questionId gespeichert wurde,
-  // behandeln wir das bei einem Ein-Set-Projekt als Stats für das aktuelle Set.
   if (isLegacyFlatStats(allStats)) {
     return allStats;
   }
@@ -135,4 +137,24 @@ export function sortQuestionsByPriority(
 
     return scoreB - scoreA;
   });
+}
+
+export function buildSessionQuestions(
+  questions: QuizQuestion[],
+  setStats: QuizSetStats
+): QuizQuestion[] {
+  const groups = new Map<number, QuizQuestion[]>();
+
+  for (const question of questions) {
+    const score = getPriorityScore(setStats[question.id]);
+    const bucket = Math.floor(score / 100);
+    const bucketQuestions = groups.get(bucket) ?? [];
+
+    bucketQuestions.push(question);
+    groups.set(bucket, bucketQuestions);
+  }
+
+  return [...groups.entries()]
+    .sort((a, b) => b[0] - a[0])
+    .flatMap(([, bucketQuestions]) => shuffleArray(bucketQuestions));
 }
