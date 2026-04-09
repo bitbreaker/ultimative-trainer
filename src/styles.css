@@ -40,6 +40,10 @@ button {
   color: inherit;
 }
 
+img {
+  max-width: 100%;
+}
+
 .app-shell {
   height: 100vh;
   padding: 8px;
@@ -79,7 +83,7 @@ button {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding-top: 10px;
+  padding-top: 12px;
   overflow: hidden;
 }
 
@@ -98,13 +102,13 @@ button {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding-bottom: 8px;
+  padding-bottom: 10px;
   -webkit-overflow-scrolling: touch;
 }
 
 .menu-screen {
   justify-content: center;
-  gap: 16px;
+  gap: 18px;
 }
 
 .menu-title {
@@ -113,14 +117,14 @@ button {
   font-size: 22px;
   letter-spacing: 0.2em;
   margin-top: 8px;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   flex-shrink: 0;
 }
 
 .menu-subtitle {
   text-align: center;
   font-size: 20px;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   flex-shrink: 0;
 }
 
@@ -131,21 +135,21 @@ button {
   padding: 18px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   flex-shrink: 0;
 }
 
 .menu-option {
   width: 100%;
-  min-height: 44px;
-  padding: 10px 12px;
+  min-height: 48px;
+  padding: 12px 14px;
   border: 2px solid transparent;
   display: flex;
   align-items: flex-start;
   gap: 12px;
   text-align: left;
   font-size: 24px;
-  line-height: 1.4;
+  line-height: 1.45;
   cursor: pointer;
   touch-action: manipulation;
 }
@@ -195,7 +199,7 @@ button {
 .status-line {
   width: min(1180px, 98%);
   margin: auto auto 0 auto;
-  padding-top: 8px;
+  padding-top: 10px;
   border-top: 2px solid var(--border);
   display: flex;
   justify-content: space-between;
@@ -207,7 +211,7 @@ button {
 
 .action-bar {
   width: min(1180px, 98%);
-  margin: 12px auto 0 auto;
+  margin: 14px auto 0 auto;
   display: flex;
   justify-content: flex-end;
   gap: 12px;
@@ -216,8 +220,8 @@ button {
 }
 
 .action-button {
-  min-height: 44px;
-  padding: 10px 16px;
+  min-height: 46px;
+  padding: 10px 18px;
   border: 2px solid var(--border);
   color: var(--fg);
   cursor: pointer;
@@ -236,16 +240,25 @@ button {
 
 .quiz-screen {
   justify-content: flex-start;
-  gap: 10px;
+  gap: 14px;
   padding-bottom: 6px;
 }
 
-.quiz-meta {
-  width: min(920px, 96%);
+.quiz-meta,
+.quiz-question-box,
+.quiz-media-grid,
+.quiz-options,
+.quiz-hint,
+.quiz-result,
+.quiz-explanation {
+  width: min(1180px, 98%);
   margin: 0 auto;
+}
+
+.quiz-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 18px;
+  gap: 10px 18px;
 }
 
 .quiz-progress {
@@ -253,24 +266,23 @@ button {
 }
 
 .quiz-question-box {
-  width: min(920px, 96%);
-  margin: 0 auto;
   border: 4px double var(--border);
-  padding: 18px 22px;
+  padding: 22px 28px;
+  margin-top: 4px;
 }
 
 .quiz-question {
   font-size: 22px;
-  line-height: 1.4;
+  line-height: 1.55;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .quiz-media-grid {
-  width: min(920px, 96%);
-  margin: 0 auto;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
+  gap: 14px;
+  margin-top: 4px;
 }
 
 .quiz-media-card,
@@ -297,7 +309,7 @@ button {
 .quiz-media-caption,
 .quiz-media-missing {
   font-size: 14px;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 .quiz-media-missing {
@@ -305,24 +317,23 @@ button {
 }
 
 .quiz-options {
-  width: min(1180px, 98%);
-  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
+  margin-top: 6px;
 }
 
 .quiz-option {
   width: 100%;
-  padding: 10px 12px;
+  padding: 14px 16px;
   border: 2px solid var(--border);
   display: grid;
   grid-template-columns: 44px 1fr;
-  gap: 10px;
+  gap: 12px;
   align-items: start;
   text-align: left;
   font-size: 20px;
-  line-height: 1.45;
+  line-height: 1.5;
   color: var(--fg);
   cursor: pointer;
   touch-action: manipulation;
@@ -349,20 +360,17 @@ button {
   border-color: var(--bad);
 }
 
-.quiz-hint,
-.quiz-result,
-.quiz-explanation {
-  width: min(920px, 96%);
-  margin: 0 auto;
-}
-
 .quiz-hint {
   font-size: 18px;
+  line-height: 1.45;
+  margin-top: 2px;
 }
 
 .quiz-result {
   font-size: 22px;
   font-weight: bold;
+  min-height: 32px;
+  margin-top: 2px;
 }
 
 .quiz-result.correct {
@@ -375,15 +383,16 @@ button {
 
 .quiz-explanation {
   border: 4px double var(--border);
-  padding: 12px 18px;
+  padding: 14px 18px;
   font-size: 18px;
-  line-height: 1.5;
+  line-height: 1.55;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .stats-screen {
   justify-content: flex-start;
-  gap: 10px;
+  gap: 12px;
 }
 
 .stats-summary-box,
@@ -391,12 +400,12 @@ button {
   width: min(1180px, 98%);
   margin: 0 auto;
   border: 4px double var(--border);
-  padding: 14px 18px;
+  padding: 16px 20px;
 }
 
 .stats-summary-box {
   font-size: 18px;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 .stats-table-header,
@@ -410,24 +419,36 @@ button {
 .stats-table-header {
   color: var(--highlight);
   border-bottom: 2px solid var(--border);
-  padding-bottom: 8px;
+  padding-bottom: 10px;
   margin-bottom: 8px;
 }
 
 .stats-table-row {
-  padding: 8px 0;
-  font-size: 15px;
+  padding: 12px 0;
+  font-size: 16px;
+  line-height: 1.5;
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.stats-table-row:last-child {
+  border-bottom: 0;
 }
 
 .col-question {
   min-width: 0;
-  line-height: 1.4;
   white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .col-small {
   text-align: right;
+  white-space: nowrap;
+}
+
+.stats-empty {
+  padding: 16px 0 4px;
+  line-height: 1.5;
 }
 
 .highlight {
@@ -450,13 +471,13 @@ button {
   }
 
   .frame-content {
-    padding-top: 6px;
+    padding-top: 8px;
   }
 
   .menu-title {
     font-size: 18px;
     letter-spacing: 0.12em;
-    margin-bottom: 0;
+    margin-bottom: 2px;
   }
 
   .menu-subtitle {
@@ -465,10 +486,12 @@ button {
 
   .menu-box {
     padding: 12px;
+    gap: 8px;
   }
 
   .menu-option {
     font-size: 18px;
+    padding: 12px;
   }
 
   .footer-bar,
@@ -480,13 +503,19 @@ button {
     font-size: 15px;
   }
 
+  .quiz-question-box {
+    padding: 16px 18px;
+  }
+
   .quiz-question {
     font-size: 18px;
+    line-height: 1.5;
   }
 
   .quiz-option {
     grid-template-columns: 34px 1fr;
     font-size: 16px;
+    padding: 12px 14px;
   }
 
   .stats-table-header,

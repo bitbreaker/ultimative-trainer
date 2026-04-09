@@ -27,6 +27,18 @@ function isLegacyFlatStats(value: unknown): value is Record<string, QuestionStat
   return Object.values(value as Record<string, unknown>).every(isQuestionStats);
 }
 
+function getCategoryPriorityBoost(question: QuizQuestion): number {
+  if (question.categoryId === "basis") {
+    return 700;
+  }
+
+  return 0;
+}
+
+function getQuestionBasePriority(question: QuizQuestion): number {
+  return getCategoryPriorityBoost(question) + (question.priority ?? 0);
+}
+
 export function createEmptyQuestionStats(questionId: string): QuestionStats {
   return {
     questionId,
@@ -132,8 +144,8 @@ export function sortQuestionsByPriority(
   setStats: QuizSetStats
 ): QuizQuestion[] {
   return [...questions].sort((a, b) => {
-    const scoreA = getPriorityScore(setStats[a.id]);
-    const scoreB = getPriorityScore(setStats[b.id]);
+    const scoreA = getPriorityScore(setStats[a.id]) + getQuestionBasePriority(a);
+    const scoreB = getPriorityScore(setStats[b.id]) + getQuestionBasePriority(b);
 
     return scoreB - scoreA;
   });
@@ -146,7 +158,7 @@ export function buildSessionQuestions(
   const groups = new Map<number, QuizQuestion[]>();
 
   for (const question of questions) {
-    const score = getPriorityScore(setStats[question.id]);
+    const score = getPriorityScore(setStats[question.id]) + getQuestionBasePriority(question);
     const bucket = Math.floor(score / 100);
     const bucketQuestions = groups.get(bucket) ?? [];
 

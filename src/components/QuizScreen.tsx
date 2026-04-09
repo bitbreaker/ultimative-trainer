@@ -14,6 +14,7 @@ import type { QuizMedia, QuizQuestion, QuizSet } from "../types/quiz";
 
 type Props = {
   quizSet: QuizSet;
+  sessionLabel?: string;
   onBack: () => void;
 };
 
@@ -79,7 +80,15 @@ function QuestionMediaGallery({ questionId, media }: QuestionMediaGalleryProps) 
   );
 }
 
-export function QuizScreen({ quizSet, onBack }: Props) {
+function getCategoryLabel(question: QuizQuestion): string {
+  if (question.categoryId === "basis") {
+    return "Basisfragen";
+  }
+
+  return "Spezifische Fragen See";
+}
+
+export function QuizScreen({ quizSet, sessionLabel, onBack }: Props) {
   const [allStats, setAllStats] = useState(() => loadAllStats());
   const [sessionQuestions, setSessionQuestions] = useState<QuizQuestion[]>([]);
   const [questionIndex, setQuestionIndex] = useState(0);
@@ -236,6 +245,8 @@ export function QuizScreen({ quizSet, onBack }: Props) {
   }
 
   const explanation = question.explanation?.trim();
+  const categoryLabel = getCategoryLabel(question);
+  const statusLabel = sessionLabel ? `${sessionLabel} - ${categoryLabel}` : categoryLabel;
 
   return (
     <div className="quiz-screen">
@@ -246,6 +257,8 @@ export function QuizScreen({ quizSet, onBack }: Props) {
           <div className="quiz-progress">
             Frage {questionIndex + 1} von {sessionQuestions.length}
           </div>
+          <div className="quiz-progress">Amtliche Nr. {question.number}</div>
+          <div className="quiz-progress">Kategorie: {categoryLabel}</div>
           <div className="quiz-progress">Erfolgsquote: {accuracyLabel}</div>
         </div>
 
@@ -317,13 +330,13 @@ export function QuizScreen({ quizSet, onBack }: Props) {
           onClick={handlePrimaryAction}
           disabled={shuffledOptions.length === 0}
         >
-          {!checked ? "Prüfen" : isLastQuestion ? "Zur Set-Auswahl" : "Weiter"}
+          {!checked ? "Prüfen" : isLastQuestion ? "Zurück zur Auswahl" : "Weiter"}
         </button>
       </div>
 
       <div className="status-line">
         <span>{quizSet.title}</span>
-        <span>{!checked ? "↑↓ oder Tap zum Wählen" : "Enter oder Tap für weiter"}</span>
+        <span>{statusLabel}</span>
       </div>
     </div>
   );

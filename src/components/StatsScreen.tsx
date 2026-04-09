@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 import {
   getAccuracy,
-  getQuestionStats,
   getPriorityScore,
+  getQuestionStats,
   getSetStats,
   loadAllStats,
 } from "../lib/stats";
@@ -22,32 +22,44 @@ export function StatsScreen({ quizSet, onBack }: Props) {
     }
   });
 
-  const rows = useMemo(() => {
+  const summary = useMemo(() => {
     const allStats = loadAllStats();
     const setStats = getSetStats(allStats, quizSet.id);
 
-    return quizSet.questions
-      .map((question) => {
-        const stat = getQuestionStats(setStats, question.id);
+    const rows = quizSet.questions.map((question) => {
+      const stat = getQuestionStats(setStats, question.id);
 
-        return {
-          id: question.id,
-          question: question.question,
-          shown: stat.shown,
-          correct: stat.correct,
-          wrong: stat.wrong,
-          accuracy: getAccuracy(stat),
-          priority: getPriorityScore(stat),
-        };
-      })
-      .sort((a, b) => b.priority - a.priority);
+      return {
+        id: question.id,
+        question: question.question,
+        shown: stat.shown,
+        correct: stat.correct,
+        wrong: stat.wrong,
+        accuracy: getAccuracy(stat),
+        priority: getPriorityScore(stat),
+      };
+    });
+
+    const answeredRows = rows.filter((row) => row.shown > 0);
+    const topRows = [...answeredRows]
+      .sort((a, b) => b.priority - a.priority)
+      .slice(0, 10);
+
+    const totalShown = rows.reduce((sum, row) => sum + row.shown, 0);
+    const totalCorrect = rows.reduce((sum, row) => sum + row.correct, 0);
+    const totalWrong = rows.reduce((sum, row) => sum + row.wrong, 0);
+    const totalAccuracy =
+      totalShown > 0 ? Math.round((totalCorrect / totalShown) * 100) : 0;
+
+    return {
+      totalShown,
+      totalCorrect,
+      totalWrong,
+      totalAccuracy,
+      answeredQuestions: answeredRows.length,
+      topRows,
+    };
   }, [quizSet]);
-
-  const totalShown = rows.reduce((sum, row) => sum + row.shown, 0);
-  const totalCorrect = rows.reduce((sum, row) => sum + row.correct, 0);
-  const totalWrong = rows.reduce((sum, row) => sum + row.wrong, 0);
-  const totalAccuracy =
-    totalShown > 0 ? Math.round((totalCorrect / totalShown) * 100) : 0;
 
   return (
     <div className="stats-screen">
@@ -57,25 +69,28 @@ export function StatsScreen({ quizSet, onBack }: Props) {
         <div className="stats-summary-box">
           <div>Set: {quizSet.title}</div>
           <div>Fragen im Set: {quizSet.questions.length}</div>
-          <div>Beantwortet: {totalShown}</div>
-          <div>Richtig: {totalCorrect}</div>
-          <div>Falsch: {totalWrong}</div>
-          <div>Gesamtquote: {totalAccuracy}%</div>
+          <div>Beantwortete Fragen: {summary.answeredQuestions}</div>
+          <div>Antworten gesamt: {summary.totalShown}</div>
+          <div>Richtig: {summary.totalCorrect}</div>
+          <div>Falsch: {summary.totalWrong}</div>
+          <div>Gesamtquote: {summary.totalAccuracy}%</div>
         </div>
 
         <div className="stats-table-box">
           <div className="stats-table-header">
-            <div className="col-question">Frage</div>
+            <div className="col-question">Top 10 Fragen</div>
             <div className="col-small">G</div>
             <div className="col-small">R</div>
             <div className="col-small">F</div>
             <div className="col-small">%</div>
           </div>
 
-          {rows.map((row, index) => {
-            const accuracyLabel = row.shown > 0 ? `${row.accuracy}` : "Neu";
-
-            return (
+          {summary.topRows.length === 0 ? (
+            <div className="stats-empty">
+              Noch keine beantworteten Fragen vorhanden.
+            </div>
+          ) : (
+            summary.topRows.map((row, index) => (
               <div key={row.id} className="stats-table-row">
                 <div className="col-question">
                   {index + 1}. {row.question}
@@ -83,10 +98,10 @@ export function StatsScreen({ quizSet, onBack }: Props) {
                 <div className="col-small">{row.shown}</div>
                 <div className="col-small">{row.correct}</div>
                 <div className="col-small">{row.wrong}</div>
-                <div className="col-small">{accuracyLabel}</div>
+                <div className="col-small">{row.accuracy}%</div>
               </div>
-            );
-          })}
+            ))
+          )}
         </div>
       </div>
 
@@ -98,7 +113,7 @@ export function StatsScreen({ quizSet, onBack }: Props) {
 
       <div className="status-line">
         <span>{quizSet.title}</span>
-        <span>Alle Fragen nach Priorität sortiert</span>
+        <span>Top 10 nach Priorität</span>
       </div>
     </div>
   );

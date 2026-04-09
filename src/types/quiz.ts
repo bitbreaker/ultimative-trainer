@@ -10,8 +10,18 @@ export type QuizMedia = {
   caption?: string;
 };
 
+export type QuizCategory = {
+  id: string;
+  label: string;
+  description?: string;
+  priorityBoost?: number;
+};
+
 export type QuizQuestion = {
   id: string;
+  number: number;
+  categoryId: string;
+  priority?: number;
   question: string;
   options: QuizOption[];
   correctOptionIds: string[];
@@ -24,5 +34,6 @@ export type QuizSet = {
   title: string;
   description?: string;
   mode: "multiple-choice";
+  categories?: QuizCategory[];
   questions: QuizQuestion[];
 };
