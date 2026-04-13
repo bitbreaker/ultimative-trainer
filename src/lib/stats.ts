@@ -118,7 +118,9 @@ export function updateQuestionStats(
   };
 }
 
-export function getAccuracy(stat?: Pick<QuestionStats, "correct" | "shown">): number {
+export function getAccuracy(
+  stat?: Pick<QuestionStats, "shown" | "correct">
+): number {
   if (!stat || stat.shown === 0) {
     return 0;
   }
@@ -126,7 +128,9 @@ export function getAccuracy(stat?: Pick<QuestionStats, "correct" | "shown">): nu
   return Math.round((stat.correct / stat.shown) * 100);
 }
 
-export function getPriorityScore(stat?: Pick<QuestionStats, "shown" | "wrong">): number {
+export function getPriorityScore(
+  stat?: Pick<QuestionStats, "shown" | "wrong">
+): number {
   if (!stat) {
     return 1000;
   }
@@ -146,7 +150,6 @@ export function sortQuestionsByPriority(
   return [...questions].sort((a, b) => {
     const scoreA = getPriorityScore(setStats[a.id]) + getQuestionBasePriority(a);
     const scoreB = getPriorityScore(setStats[b.id]) + getQuestionBasePriority(b);
-
     return scoreB - scoreA;
   });
 }
@@ -158,10 +161,10 @@ export function buildSessionQuestions(
   const groups = new Map<number, QuizQuestion[]>();
 
   for (const question of questions) {
-    const score = getPriorityScore(setStats[question.id]) + getQuestionBasePriority(question);
+    const score =
+      getPriorityScore(setStats[question.id]) + getQuestionBasePriority(question);
     const bucket = Math.floor(score / 100);
     const bucketQuestions = groups.get(bucket) ?? [];
-
     bucketQuestions.push(question);
     groups.set(bucket, bucketQuestions);
   }
@@ -169,4 +172,18 @@ export function buildSessionQuestions(
   return [...groups.entries()]
     .sort((a, b) => b[0] - a[0])
     .flatMap(([, bucketQuestions]) => shuffleArray(bucketQuestions));
+}
+
+export function getWorstQuestions(
+  questions: QuizQuestion[],
+  setStats: QuizSetStats,
+  limit: number
+): QuizQuestion[] {
+  return [...questions]
+    .sort((a, b) => {
+      const scoreA = getPriorityScore(setStats[a.id]) + getQuestionBasePriority(a);
+      const scoreB = getPriorityScore(setStats[b.id]) + getQuestionBasePriority(b);
+      return scoreB - scoreA;
+    })
+    .slice(0, limit);
 }

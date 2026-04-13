@@ -1,139 +1,80 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { useWindowKeydown } from "../hooks/useWindowKeydown";
 import { shuffleArray } from "../lib/shuffle";
 import {
   buildSessionQuestions,
-  getAccuracy,
-  getQuestionStats,
   getSetStats,
   loadAllStats,
   saveAllStats,
   updateQuestionStats,
 } from "../lib/stats";
-import { useWindowKeydown } from "../hooks/useWindowKeydown";
-import type { QuizMedia, QuizQuestion, QuizSet } from "../types/quiz";
+import type { QuizOption, QuizQuestion, QuizSet } from "../types/quiz";
+import { QuestionMediaGallery } from "./QuestionMediaGallery";
 
 type Props = {
   quizSet: QuizSet;
-  sessionLabel?: string;
+  sessionLabel: string;
   onBack: () => void;
 };
 
-type QuestionMediaGalleryProps = {
-  questionId: string;
-  media: QuizMedia[];
+type PreparedQuestion = {
+  question: QuizQuestion;
+  options: QuizOption[];
 };
 
-function resolveMediaSrc(src: string): string {
-  if (/^(https?:)?\/\//.test(src) || src.startsWith("data:")) {
-    return src;
-  }
-
-  return `${import.meta.env.BASE_URL}${src.replace(/^\/+/, "")}`;
-}
-
-function QuestionMediaGallery({ questionId, media }: QuestionMediaGalleryProps) {
-  const [failedSources, setFailedSources] = useState<string[]>([]);
-
-  useEffect(() => {
-    setFailedSources([]);
-  }, [questionId]);
-
-  return (
-    <div className="quiz-media-grid">
-      {media.map((item) => {
-        const key = `${questionId}-${item.src}`;
-        const hasFailed = failedSources.includes(item.src);
-
-        if (hasFailed) {
-          return (
-            <div key={key} className="quiz-media-missing">
-              Bilddatei nicht gefunden: {item.src}
-            </div>
-          );
-        }
-
-        return (
-          <figure key={key} className="quiz-media-card">
-            <img
-              className="quiz-media-image"
-              src={resolveMediaSrc(item.src)}
-              alt={item.alt ?? `Abbildung zu ${questionId}`}
-              loading="lazy"
-              onError={() => {
-                setFailedSources((previous) => {
-                  if (previous.includes(item.src)) {
-                    return previous;
-                  }
-
-                  return [...previous, item.src];
-                });
-              }}
-            />
-
-            {item.caption ? (
-              <figcaption className="quiz-media-caption">{item.caption}</figcaption>
-            ) : null}
-          </figure>
-        );
-      })}
-    </div>
-  );
-}
-
-function getCategoryLabel(question: QuizQuestion): string {
-  if (question.categoryId === "basis") {
-    return "Basisfragen";
-  }
-
-  return "Spezifische Fragen See";
+function countTrue(values: boolean[]): number {
+  return values.filter(Boolean).length;
 }
 
 export function QuizScreen({ quizSet, sessionLabel, onBack }: Props) {
   const [allStats, setAllStats] = useState(() => loadAllStats());
-  const [sessionQuestions, setSessionQuestions] = useState<QuizQuestion[]>([]);
+  const [preparedQuestions, setPreparedQuestions] = useState<PreparedQuestion[]>(
+    []
+  );
   const [questionIndex, setQuestionIndex] = useState(0);
-  const [selectedOptionIndex, setSelectedOptionIndex] = useState(0);
+  const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(
+    null
+  );
   const [checked, setChecked] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
+  const [sessionResults, setSessionResults] = useState<boolean[]>([]);
 
   useEffect(() => {
     const latestAllStats = loadAllStats();
-    setAllStats(latestAllStats);
-
     const setStats = getSetStats(latestAllStats, quizSet.id);
-    const preparedQuestions = buildSessionQuestions(quizSet.questions, setStats);
+    const orderedQuestions = buildSessionQuestions(quizSet.questions, setStats);
 
-    setSessionQuestions(preparedQuestions);
+    setAllStats(latestAllStats);
+    setPreparedQuestions(
+      orderedQuestions.map((question) => ({
+        question,
+        options: shuffleArray(question.options),
+      }))
+    );
     setQuestionIndex(0);
-    setSelectedOptionIndex(0);
+    setSelectedOptionIndex(null);
     setChecked(false);
     setIsCorrect(false);
+    setSessionResults([]);
   }, [quizSet]);
 
-  const question = sessionQuestions[questionIndex];
-
-  const shuffledOptions = useMemo(() => {
-    if (!question) {
-      return [];
-    }
-
-    return shuffleArray(question.options);
-  }, [question]);
-
-  const setStats = useMemo(() => {
-    return getSetStats(allStats, quizSet.id);
-  }, [allStats, quizSet.id]);
-
-  const currentStat = question ? getQuestionStats(setStats, question.id) : undefined;
-  const accuracy = getAccuracy(currentStat);
-  const isLastQuestion = questionIndex >= sessionQuestions.length - 1;
-  const accuracyLabel = currentStat?.shown ? `${accuracy}%` : "Neu";
+  const current = preparedQuestions[questionIndex];
+  const question = current?.question;
+  const options = current?.options ?? [];
+  const isLastQuestion = questionIndex >= preparedQuestions.length - 1;
 
   useEffect(() => {
-    setSelectedOptionIndex(0);
+    setSelectedOptionIndex(null);
     setChecked(false);
     setIsCorrect(false);
   }, [question?.id]);
+
+  const sessionCorrectCount = countTrue(sessionResults);
+  const completedCount = questionIndex + (checked ? 1 : 0);
+  const progressPercent =
+    preparedQuestions.length > 0
+      ? Math.round((completedCount / preparedQuestions.length) * 100)
+      : 0;
 
   function handleSelectOption(index: number) {
     if (checked) {
@@ -144,11 +85,16 @@ export function QuizScreen({ quizSet, sessionLabel, onBack }: Props) {
   }
 
   function handleCheck() {
-    if (!question || checked || shuffledOptions.length === 0) {
+    if (
+      !question ||
+      checked ||
+      options.length === 0 ||
+      selectedOptionIndex === null
+    ) {
       return;
     }
 
-    const selectedOption = shuffledOptions[selectedOptionIndex];
+    const selectedOption = options[selectedOptionIndex];
 
     if (!selectedOption) {
       return;
@@ -164,6 +110,7 @@ export function QuizScreen({ quizSet, sessionLabel, onBack }: Props) {
 
     setIsCorrect(wasCorrect);
     setChecked(true);
+    setSessionResults((previous) => [...previous, wasCorrect]);
     setAllStats(updatedAllStats);
     saveAllStats(updatedAllStats);
   }
@@ -193,14 +140,17 @@ export function QuizScreen({ quizSet, sessionLabel, onBack }: Props) {
       return;
     }
 
-    if (!question || shuffledOptions.length === 0) {
+    if (!question || options.length === 0) {
       return;
     }
 
     if (!checked && event.key === "ArrowUp") {
       event.preventDefault();
       setSelectedOptionIndex((previous) => {
-        return (previous - 1 + shuffledOptions.length) % shuffledOptions.length;
+        if (previous === null) {
+          return options.length - 1;
+        }
+        return (previous - 1 + options.length) % options.length;
       });
       return;
     }
@@ -208,7 +158,10 @@ export function QuizScreen({ quizSet, sessionLabel, onBack }: Props) {
     if (!checked && event.key === "ArrowDown") {
       event.preventDefault();
       setSelectedOptionIndex((previous) => {
-        return (previous + 1) % shuffledOptions.length;
+        if (previous === null) {
+          return 0;
+        }
+        return (previous + 1) % options.length;
       });
       return;
     }
@@ -222,10 +175,8 @@ export function QuizScreen({ quizSet, sessionLabel, onBack }: Props) {
   if (!question) {
     return (
       <div className="quiz-screen">
-        <div className="menu-title">TRAINING</div>
-
         <div className="screen-scroll-area">
-          <div className="quiz-question-box">
+          <div className="panel quiz-question-panel">
             <div className="quiz-question">Keine Fragen gefunden.</div>
           </div>
         </div>
@@ -235,34 +186,38 @@ export function QuizScreen({ quizSet, sessionLabel, onBack }: Props) {
             Zurück
           </button>
         </div>
-
-        <div className="status-line">
-          <span>{quizSet.title}</span>
-          <span>Keine Daten</span>
-        </div>
       </div>
     );
   }
 
-  const explanation = question.explanation?.trim();
-  const categoryLabel = getCategoryLabel(question);
-  const statusLabel = sessionLabel ? `${sessionLabel} - ${categoryLabel}` : categoryLabel;
-
   return (
     <div className="quiz-screen">
-      <div className="menu-title">TRAINING</div>
-
       <div className="screen-scroll-area">
-        <div className="quiz-meta">
-          <div className="quiz-progress">
-            Frage {questionIndex + 1} von {sessionQuestions.length}
+        <div className="session-panel session-panel-minimal">
+          <div className="session-panel-topline">
+            <div className="session-chip accent">{sessionLabel}</div>
           </div>
-          <div className="quiz-progress">Amtliche Nr. {question.number}</div>
-          <div className="quiz-progress">Kategorie: {categoryLabel}</div>
-          <div className="quiz-progress">Erfolgsquote: {accuracyLabel}</div>
+
+          <div className="progress-row">
+            <div className="progress-meta">
+              <span>
+                Frage {questionIndex + 1} / {preparedQuestions.length}
+              </span>
+              <span>
+                {sessionCorrectCount}/{sessionResults.length || 0} richtig
+              </span>
+            </div>
+
+            <div className="progress-track" aria-hidden="true">
+              <div
+                className="progress-fill"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+          </div>
         </div>
 
-        <div className="quiz-question-box">
+        <div className="panel quiz-question-panel">
           <div className="quiz-question">{question.question}</div>
         </div>
 
@@ -271,17 +226,17 @@ export function QuizScreen({ quizSet, sessionLabel, onBack }: Props) {
         ) : null}
 
         <div className="quiz-options">
-          {shuffledOptions.map((option, index) => {
-            const isSelected = index === selectedOptionIndex;
+          {options.map((option, index) => {
+            const isFocused = selectedOptionIndex === index;
             const isRightAnswer = question.correctOptionIds.includes(option.id);
 
             let className = "quiz-option";
 
-            if (!checked && isSelected) {
-              className += " active";
+            if (!checked && isFocused) {
+              className += " focused";
             }
 
-            if (checked && isSelected && !isCorrect) {
+            if (checked && isFocused && !isCorrect) {
               className += " wrong";
             }
 
@@ -306,17 +261,18 @@ export function QuizScreen({ quizSet, sessionLabel, onBack }: Props) {
         </div>
 
         {!checked ? (
-          <div className="quiz-hint">
-            <span className="highlight">ENTER</span> oder Button zum Prüfen
+          <div className="panel panel-compact quiz-hint-panel">
+            <span className="highlight">↑↓</span> wählen oder tippen ·{" "}
+            <span className="highlight">ENTER</span> prüfen
           </div>
         ) : (
-          <>
-            <div className={`quiz-result ${isCorrect ? "correct" : "wrong"}`}>
-              {isCorrect ? "RICHTIG" : "FALSCH"}
-            </div>
-
-            {explanation ? <div className="quiz-explanation">{explanation}</div> : null}
-          </>
+          <div
+            className={`panel panel-compact quiz-result-panel ${
+              isCorrect ? "is-correct" : "is-wrong"
+            }`}
+          >
+            {isCorrect ? "RICHTIG" : "FALSCH"}
+          </div>
         )}
       </div>
 
@@ -328,15 +284,10 @@ export function QuizScreen({ quizSet, sessionLabel, onBack }: Props) {
           type="button"
           className="action-button primary"
           onClick={handlePrimaryAction}
-          disabled={shuffledOptions.length === 0}
+          disabled={options.length === 0 || (!checked && selectedOptionIndex === null)}
         >
           {!checked ? "Prüfen" : isLastQuestion ? "Zurück zur Auswahl" : "Weiter"}
         </button>
-      </div>
-
-      <div className="status-line">
-        <span>{quizSet.title}</span>
-        <span>{statusLabel}</span>
       </div>
     </div>
   );

@@ -1,9 +1,9 @@
 import { useWindowKeydown } from "./useWindowKeydown";
 
-type Params = {
+type Options = {
   itemCount: number;
   selectedIndex: number;
-  onChange: (next: number) => void;
+  onChange: (nextIndex: number) => void;
   onEnter: () => void;
   onBack?: () => void;
 };
@@ -14,7 +14,7 @@ export function useKeyboardMenu({
   onChange,
   onEnter,
   onBack,
-}: Params) {
+}: Options): void {
   useWindowKeydown((event) => {
     if (itemCount <= 0) {
       return;

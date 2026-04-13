@@ -1,7 +1,8 @@
-type Props = {
+import type { PropsWithChildren } from "react";
+
+type Props = PropsWithChildren<{
   title: string;
-  children: React.ReactNode;
-};
+}>;
 
 export function Frame({ title, children }: Props) {
   return (

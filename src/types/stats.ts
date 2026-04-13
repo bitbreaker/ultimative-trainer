@@ -6,5 +6,4 @@ export type QuestionStats = {
 };
 
 export type QuizSetStats = Record<string, QuestionStats>;
-
 export type AllQuizStats = Record<string, QuizSetStats>;

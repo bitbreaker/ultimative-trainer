@@ -1,29 +1,43 @@
 import { useState } from "react";
 import { useKeyboardMenu } from "../hooks/useKeyboardMenu";
-import { MenuBox } from "./MenuBox";
+import { MenuBox, type MenuItemSpec } from "./MenuBox";
 
 type Props = {
-  onTrain: () => void;
+  onTraining: () => void;
+  onExamSheets: () => void;
   onStats: () => void;
 };
 
-const items = ["Trainieren", "Statistik anzeigen", "Beenden"];
+const items: MenuItemSpec[] = [
+  {
+    label: "Lernen",
+    badge: "Training",
+  },
+  {
+    label: "Prüfungsbögen",
+    badge: "15",
+  },
+  {
+    label: "Statistik",
+    badge: "Stats",
+  },
+];
 
-export function Menu({ onTrain, onStats }: Props) {
+export function Menu({ onTraining, onExamSheets, onStats }: Props) {
   const [selected, setSelected] = useState(0);
 
   function activateIndex(index: number) {
     if (index === 0) {
-      onTrain();
+      onTraining();
       return;
     }
 
     if (index === 1) {
-      onStats();
+      onExamSheets();
       return;
     }
 
-    alert("Der Browser kann nicht direkt von der App beendet werden.");
+    onStats();
   }
 
   useKeyboardMenu({
@@ -35,11 +49,7 @@ export function Menu({ onTrain, onStats }: Props) {
 
   return (
     <div className="menu-screen">
-      <div className="menu-title">MAIN MENU</div>
-
-      <div className="menu-subtitle">
-        Willkommen... Bitte treffen Sie Ihre Auswahl
-      </div>
+      <div className="menu-title">HAUPTMENÜ</div>
 
       <MenuBox
         items={items}
@@ -47,23 +57,6 @@ export function Menu({ onTrain, onStats }: Props) {
         onSelect={setSelected}
         onActivate={activateIndex}
       />
-
-      <div className="footer-bar">
-        <div>
-          <span className="footer-key">↑↓</span> Navigation
-        </div>
-        <div>
-          <span className="footer-key">ENTER</span> Auswählen
-        </div>
-        <div>
-          <span className="footer-key">TAP</span> Tippen / Klicken
-        </div>
-      </div>
-
-      <div className="status-line">
-        <span>Der Ultimative Trainer</span>
-        <span>Bereit für Tastatur und Touch</span>
-      </div>
     </div>
   );
 }

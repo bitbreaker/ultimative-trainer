@@ -20,7 +20,7 @@ export type QuizCategory = {
 export type QuizQuestion = {
   id: string;
   number: number;
-  categoryId: string;
+  categoryId?: string;
   priority?: number;
   question: string;
   options: QuizOption[];
