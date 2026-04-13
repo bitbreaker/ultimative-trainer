@@ -43,12 +43,6 @@
 
 ---
 
-## 📸 Preview
-
-*(Optional Screenshot hier einfügen)*
-
----
-
 ## 🧱 Tech Stack
 
 * React

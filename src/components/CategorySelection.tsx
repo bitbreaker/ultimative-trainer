@@ -60,7 +60,7 @@ export function CategorySelection({ quizSet, onBack, onSelectCategory }: Props) 
       <div className="menu-subtitle">Bitte wählen Sie Ihren Trainingsbereich</div>
 
       <MenuBox
-        items={options.map((option) => option.label)}
+        items={options.map((option) => ({ label: option.label }))}
         selected={selected}
         onSelect={setSelected}
         onActivate={activateIndex}

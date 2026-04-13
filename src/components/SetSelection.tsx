@@ -41,7 +41,7 @@ export function SetSelection({ sets, onBack, onSelectSet }: Props) {
       <div className="menu-subtitle">Bitte wählen Sie ein Trainingsset</div>
 
       <MenuBox
-        items={sets.map((set) => set.label)}
+        items={sets.map((set) => ({ label: set.label }))}
         selected={selected}
         onSelect={setSelected}
         onActivate={activateIndex}
