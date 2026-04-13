@@ -8,6 +8,7 @@
 ![Status](https://img.shields.io/badge/status-in%20development-blue)
 ![Tech](https://img.shields.io/badge/tech-React%20%2B%20TypeScript-blue)
 ![UI](https://img.shields.io/badge/UI-Retro%20DOS-yellow)
+![License: MIT](https://img.shields.io/badge/License-MIT-orange.svg)
 
 ---
 
@@ -167,3 +168,13 @@ Fokussiert.
 ## 🧪 Status
 
 🚧 Aktive Entwicklung – Feedback willkommen
+
+
+## License
+
+The application source code in this repository is licensed under the MIT License.
+See [LICENSE](./LICENSE).
+
+Official SBF See question text, derived question data, and extracted media assets
+are **not** covered by the MIT License.
+See [NOTICE.md](./NOTICE.md) for details.
